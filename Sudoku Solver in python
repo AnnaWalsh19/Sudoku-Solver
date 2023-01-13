@@ -1,0 +1,164 @@
+from textwrap import wrap
+from IPython.core.display import display, HTML
+rows="ABCDEFGHI"
+cols="123456789"
+def ViewGrid(grid):
+    """nice visual output of a sudoku grid. grid provided as single string"""
+    htmlstr="<style>tr.myContainer :nth-child(3n+0) {border-right:1px solid black} tr.myContainer :last-child {border-right: 0px}</style><table>"
+    for row,rowdata in zip(rows,wrap(grid,9)):
+        if row in "CF":
+             htmlstr+="<tr class='myContainer' style='border-bottom:1px solid black'><td>"
+        else:
+            htmlstr+="<tr class='myContainer'><td>"
+        htmlstr+="</td><td>".join(list(rowdata))+"</td></tr>"
+    htmlstr+="</table>"
+    display(HTML(htmlstr))
+    
+#Insert your function def statements, preconditions, postconditions and tests here
+# YOUR CODE HERE
+
+def ConvertToList(input1):
+    """convert input into list
+    create a list of rows
+    a list of columns
+    a list of squares"""
+    string_of_numbers = input1
+    complete_list = list(string_of_numbers) #converts string to list
+    #print(complete_list)
+    complete_list_int = [int(i) for i in complete_list] #the list is of strings of numbers so this changes it to a list of integers
+    #print(complete_list_int)
+    grid = [complete_list_int[i:i+9] for i in range(0, len(complete_list_int), 9)] #creates a list of rows
+    #pre-conditions
+    assert isinstance(input1, str) #checks to make sure sudoku is input as string
+    assert len(input1) == 81 #checks to make sure the length of string is correct
+    #post-conditions
+    assert isinstance(grid,list) #checks to make sure the input is converted into a list defined as grid
+    return grid  #, list_of_columns, list_of_squares_in_order
+
+def FindingZeros(grid):
+    """find 0s to solve"""
+    #pre-conditoins
+    assert isinstance(grid,list)
+    #list_of_rows, list_of_columns, list_of_squares_in_order = ConvertToList(input1)
+    where_zeros_in_rows = []
+    where_zeros_in_columns = []
+    for row in range(9):
+        for col in range(9):
+            if grid[row][col] == 0: # if element of grid at row and column is 0 then return row and column
+                #where_zeros_in_rows.append(i)
+                #where_zeros_in_columns.append(j)
+                assert isinstance(row,int) #checks to make sure rows are integers
+                assert isinstance (col,int) #checks to make sure columns are integers
+                return row,col
+    return None, None #if there is no row or column with 0s return None,None
+    #zeros = list(zip(where_zeros_in_rows, where_zeros_in_columns))
+    #post-conditions
+    #assert isinstance(zeros, list)
+    #assert grid[i,j] == 0 #checks to make sure there are 0s
+
+
+def CheckIfValid(grid,num,r,c):
+    """checks to see if the grid is valid by checking number values in empty positions"""
+    #pre-conditions
+    assert isinstance(grid, list) #checks to make sure grid is a list
+    assert isinstance(num,int) #checks to make sure number value is input as an integer
+    assert isinstance(r,int) #checks to make sure row is input as integers returned from FindingZeros
+    assert isinstance(c, int) #checks to make sure column is an integer
+
+    # 1. Can't be in the row - build the row
+    row_values = grid[r] #the values of one row
+    #print("row_values ", row_values)
+    #column_values = columns[c]
+    #square_values = squares[c//3][r//3]
+
+    # 2. Can't be in the column
+    column_values = [grid[row][c] for row in range(9)] #values of one column
+    #print("Column_values ", column_values)
+
+    # 3. Can't be in the square (mini-grid)
+    square_values = []
+    row_start = (r//3)*3 #separating into 3 rows at a time
+    col_start = (c//3)*3 #separating into 3 columns at a time
+    for row in range(row_start, row_start+3):
+        for col in range(col_start, col_start+3):
+            square_values.append(grid[row][col]) # the values of one square
+    #print("Square values ", square_values)
+
+    assert isinstance(row_values,list) #checks to make sure row_values is input as list
+    assert isinstance(column_values,list) #checks to make sure column_values is input as list
+    assert isinstance(square_values,list) #checks to make sure square_values is input as list
+    if num in row_values:
+        return False
+    elif num in column_values:
+        return False
+    elif num in square_values:
+        return False
+    else:
+        return True
+    #post-conditions
+    #assert isinstance(rows,list) #checks to make sure rows is input as list
+    #assert isinstance(columns,list) #checks to make sure columns is input as list
+    #assert isinstance(squares,list) #checks to make sure squares is input as list
+
+
+
+def SolveSudoku(grid,layer):
+    """solving the sudoku using the parameters grid and layer"""
+    #pre-conditions
+    assert isinstance(grid,list) #checks to make sure grid is input as list
+    assert isinstance(layer,int) #checks to make sure layer is input as integer
+
+    #solved_grid = grid
+    myrow, mycol = FindingZeros(grid)
+    #print("Trying to solve row ", myrow, " col ", mycol)	# PL, added some debug to make it easier to see what's happening
+    #try 1 - 9 to see which number fits
+    zero = 0
+    if myrow is None and mycol is None: #if there is no row and column that has a zero in it return solved_grid where solved_grid = grid
+        solved_grid = grid
+        assert isinstance(solved_grid,list) #returns solved grid as a list
+        assert len(solved_grid) == 9 #solved grid returns a list with 81 elements
+        return solved_grid
+    for num1 in range(1, 10): #trying numbers one to 9 to see if it fits in the grid in a certain position
+       doesItFit1 = CheckIfValid(grid, num1, myrow, mycol)
+       if (doesItFit1): #if it fits then put the number in the position
+           #print("---> Success with ", num1)
+           grid[myrow][mycol] = num1
+           solve = SolveSudoku(grid, 0)
+           if solve: #this runs through SolveSudoku until it find the answer
+               solved_grid = grid
+               assert isinstance(solved_grid,list) #returns solved grid as a list
+               assert len(solved_grid) == 9 #solved grid returns a list with 81 elements
+               return solved_grid
+           else:
+               grid[myrow][mycol] = 0
+
+       #if (num1 == 9) :
+           #print("Tried all numbers in range 1-9 and cannot solve for row ", myrow, ". Failed at col ", mycol)
+    #elif zero in grid:
+    #post-conditions
+    #assert isinstance(solved_grid,list) #returns solved grid as a list
+    #assert len(solved_grid) == 9 #solved grid returns a list with 81 elements
+
+def ConvertToString(solved_grid):
+    """convert solved sudoku back into string"""
+    #pre-conditions
+    assert isinstance(solved_grid,list)
+    only_one_list = []
+    for row in range(9):
+        for col in range (9):
+            only_one_list.append(str(solved_grid[row][col])) #creates a list of all the numbers in only one list
+    final_answer = ''.join(only_one_list) #converts list in last step into a string
+    assert isinstance(final_answer,str) #checks to make sure the list is converted back into string
+    assert len(final_answer) == 81 #checks to make sure there are still 81 integers returned
+    return final_answer
+
+def doTests():
+    """testing the errors for each part of the functions, so that it stops the program after detecting the errors"""
+    assert ConvertToList("003020600900305001001806400008102900700000008006708200002609500800203009005010300") == [[0,0,3,0,2,0,6,0,0],[9,0,0,3,0,5,0,0,1],[0,0,1,8,0,6,4,0,0],[0,0,8,1,0,2,9,0,0],[7,0,0,0,0,0,0,0,8],[0,0,6,7,0,8,2,0,0],[0,0,2,6,0,9,5,0,0],[8,0,0,2,0,3,0,0,9],[0,0,5,0,1,0,3,0,0]]
+    assert FindingZeros([[0,0,3,0,2,0,6,0,0],[9,0,0,3,0,5,0,0,1],[0,0,1,8,0,6,4,0,0],[0,0,8,1,0,2,9,0,0],[7,0,0,0,0,0,0,0,8],[0,0,6,7,0,8,2,0,0],[0,0,2,6,0,9,5,0,0],[8,0,0,2,0,3,0,0,9],[0,0,5,0,1,0,3,0,0]]) == (0,0)
+    assert CheckIfValid([[0,0,3,0,2,0,6,0,0],[9,0,0,3,0,5,0,0,1],[0,0,1,8,0,6,4,0,0],[0,0,8,1,0,2,9,0,0],[7,0,0,0,0,0,0,0,8],[0,0,6,7,0,8,2,0,0],[0,0,2,6,0,9,5,0,0],[8,0,0,2,0,3,0,0,9],[0,0,5,0,1,0,3,0,0]],1,2,8) == False
+    assert CheckIfValid([[0,0,3,0,2,0,6,0,0],[9,0,0,3,0,5,0,0,1],[0,0,1,8,0,6,4,0,0],[0,0,8,1,0,2,9,0,0],[7,0,0,0,0,0,0,0,8],[0,0,6,7,0,8,2,0,0],[0,0,2,6,0,9,5,0,0],[8,0,0,2,0,3,0,0,9],[0,0,5,0,1,0,3,0,0]],1,1,3) == False
+    assert SolveSudoku([[0,0,3,0,2,0,6,0,0],[9,0,0,3,0,5,0,0,1],[0,0,1,8,0,6,4,0,0],[0,0,8,1,0,2,9,0,0],[7,0,0,0,0,0,0,0,8],[0,0,6,7,0,8,2,0,0],[0,0,2,6,0,9,5,0,0],[8,0,0,2,0,3,0,0,9],[0,0,5,0,1,0,3,0,0]],0) == [[4,8,3,9,2,1,6,5,7],[9,6,7,3,4,5,8,2,1],[2,5,1,8,7,6,4,9,3],[5,4,8,1,3,2,9,7,6],[7,2,9,5,6,4,1,3,8],[1,3,6,7,9,8,2,4,5],[3,7,2,6,8,9,5,1,4],[8,1,4,2,5,3,7,6,9],[6,9,5,4,1,7,3,8,2]]
+    assert ConvertToString([[4,8,3,9,2,1,6,5,7],[9,6,7,3,4,5,8,2,1],[2,5,1,8,7,6,4,9,3],[5,4,8,1,3,2,9,7,6],[7,2,9,5,6,4,1,3,8],[1,3,6,7,9,8,2,4,5],[3,7,2,6,8,9,5,1,4],[8,1,4,2,5,3,7,6,9],[6,9,5,4,1,7,3,8,2]]) == "483921657967345821251876493548132976729564138136798245372689514814253769695417382"
+    return True
+
